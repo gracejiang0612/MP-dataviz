@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive visualization showing China graduate school application trends and acceptance rates from 2006-2025">
+    <meta name="keywords" content="graduate school, China, education, acceptance rates, applications, data visualization">
+    <meta name="author" content="Graduate School Data Analysis">
+    <title>China Graduate School Trends 2006-2025 | Data Visualization</title>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+
+
+        .header {
+            background: white;
+            color: #1f2937;
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .title {
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            font-size: clamp(14px, 2vw, 18px);
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            padding: 40px 30px;
+        }
+
+        .chart-section {
+            margin-bottom: 50px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .insights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .insight-card {
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .insight-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .insight-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .insight-card.blue {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left-color: #3b82f6;
+        }
+
+        .insight-card.red {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-left-color: #ef4444;
+        }
+
+        .insight-card.green {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left-color: #22c55e;
+        }
+
+        .insight-icon {
+            font-size: 32px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .insight-title {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .insight-text {
+            font-size: 14px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .insight-number {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .blue .insight-title, .blue .insight-number { color: #1e40af; }
+        .red .insight-title, .red .insight-number { color: #dc2626; }
+        .green .insight-title, .green .insight-number { color: #16a34a; }
+        
+        .blue .insight-text { color: #1e3a8a; }
+        .red .insight-text { color: #b91c1c; }
+        .green .insight-text { color: #15803d; }
+
+        .sources-note {
+            margin-top: 30px;
+        }
+
+        .sources {
+            color: #4b5563;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .note {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        .methodology {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 40px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .methodology h3 {
+            color: #1f2937;
+            font-size: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .methodology p {
+            color: #4b5563;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            background: #1f2937;
+            color: #9ca3af;
+            text-align: center;
+            padding: 25px;
+            font-size: 14px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 12px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .main-content {
+                padding: 30px 20px;
+            }
+            
+            .chart-container {
+                height: 400px;
+                padding: 15px;
+            }
+            
+            .insights {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">China's Graduate Education: From Accessible to Ultra-Competitive</h1>
+            <p class="subtitle">Annual application numbers, acceptance rates, and the story of educational competition (2006-2025)</p>
+        </header>
+        
+        <main class="main-content">
+            <section class="chart-section">
+
+                <div class="chart-container">
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        Loading chart data...
+                    </div>
+                    <canvas id="graduateChart" style="display: none;"></canvas>
+                </div>
+                
+                <div class="sources-note">
+                    <p class="sources"><strong>Sources:</strong> China Education Online, Ministry of Education of the People's Republic of China; Made by Grace Jiang</p>
+                    <p class="note"><strong>Note:</strong> In 2025, the number of applicants for China's national master's degree entrance examination was 3.88 million, with approximately 670,000 actually admitted. The official statistical admission rate was 17.3%. When considering factors such as exam abandonment (where some candidates did not take the exam or gave up midway), the actual admission rate could rise to 29.6%.</p>
+                </div>
+            </section>
+
+            <section class="insights" style="display: none;">
+                <div class="insight-card blue">
+                    <span class="insight-icon">📈</span>
+                    <span class="insight-number">+205%</span>
+                    <h3 class="insight-title">Application Growth</h3>
+                    <p class="insight-text">
+                        Applications skyrocketed from 1.3M in 2006 to 3.9M in 2025, representing unprecedented growth in graduate education demand.
+                    </p>
+                </div>
+                
+                <div class="insight-card red">
+                    <span class="insight-icon">📉</span>
+                    <span class="insight-number">-36%</span>
+                    <h3 class="insight-title">Acceptance Rate Decline</h3>
+                    <p class="insight-text">
+                        Acceptance rates dropped from 26.9% to 17.3%, making graduate school increasingly competitive as demand outpaced capacity.
+                    </p>
+                </div>
+                
+                <div class="insight-card green">
+                    <span class="insight-icon">🎯</span>
+                    <span class="insight-number">16.05%</span>
+                    <h3 class="insight-title">Peak Competition (2023)</h3>
+                    <p class="insight-text">
+                        2023 marked the most competitive year with the lowest acceptance rate and nearly 4.7M applications, highlighting the education crisis.
+                    </p>
+                </div>
+            </section>
+
+
+        </main>
+
+
+    </div>
+
+    <script>
+        // Data from Excel file
+        const chartData = {
+            labels: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 
+                    2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+            datasets: [
+                {
+                    label: 'Total Applications (Millions)',
+                    data: [1.271, 1.282, 1.200, 1.246, 1.406, 1.511, 1.656, 1.760, 1.720, 1.650,
+                           1.770, 2.010, 2.380, 2.900, 3.410, 3.770, 4.570, 4.740, 4.380, 3.880],
+                    type: 'bar',
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Acceptance Rate (%)',
+                    data: [26.9, 28.13, 32.22, 36.03, 33.74, 32.73, 31.48, 30.73, 31.9, 34.58,
+                           33.32, 35.93, 32.04, 27.97, 29.88, 29.55, 24.22, 16.05, 16.7, 17.3],
+                    type: 'line',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 4,
+                    pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    fill: false,
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+
+        // Chart configuration
+        const config = {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                animation: {
+                    onComplete: function() {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('graduateChart').style.display = 'block';
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 25,
+                            font: {
+                                size: 14,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                        titleColor: '#374151',
+                        bodyColor: '#374151',
+                        borderColor: '#d1d5db',
+                        borderWidth: 1,
+                        cornerRadius: 10,
+                        displayColors: true,
+                        titleFont: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 14
+                        },
+                        padding: 15,
+                        callbacks: {
+                            title: function(context) {
+                                return `Year ${context[0].label}`;
+                            },
+                            label: function(context) {
+                                if (context.datasetIndex === 0) {
+                                    return `📚 Applications: ${context.parsed.y}M`;
+                                } else {
+                                    return `🎯 Acceptance Rate: ${context.parsed.y}%`;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Year',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            color: '#374151'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            },
+                            color: '#6b7280'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Applications (Millions)',
+                            color: '#3b82f6',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(59, 130, 246, 0.1)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#3b82f6',
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            },
+                            callback: function(value) {
+                                return value + 'M';
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Acceptance Rate (%)',
+                            color: '#ef4444',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                            color: 'rgba(239, 68, 68, 0.1)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#ef4444',
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            },
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Initialize chart when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const ctx = document.getElementById('graduateChart').getContext('2d');
+                new Chart(ctx, config);
+            }, 500); // Small delay for loading animation
+        });
+
+        // Add some interactivity to insight cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.insight-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
