@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Student Population in US Universities | Data Visualization</title>
+    
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: white;
+            color: #1f2937;
+            padding: 20px 30px 15px 30px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .title {
+            font-size: clamp(18px, 3vw, 26px);
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+
+        .subtitle {
+            font-size: clamp(12px, 1.5vw, 16px);
+            opacity: 0.8;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #4b5563;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .sources-note {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .sources {
+            color: #4b5563;
+            font-size: 14px;
+            margin-bottom: 5px;
+            line-height: 1.6;
+        }
+
+        .made-by {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /* Chart styles */
+        .line {
+            fill: none;
+            stroke: #2563eb;
+            stroke-width: 3;
+        }
+
+        .dot {
+            fill: #2563eb;
+            stroke: white;
+            stroke-width: 2;
+            r: 4;
+        }
+
+        .dot:hover {
+            r: 6;
+            stroke-width: 3;
+            fill: #1d4ed8;
+        }
+
+        .axis {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .axis-label {
+            font-size: 14px;
+            font-weight: 600;
+            fill: #374151;
+        }
+
+        .grid line {
+            stroke: #e5e7eb;
+            stroke-dasharray: 2,2;
+            stroke-width: 1;
+        }
+
+        .grid path {
+            stroke-width: 0;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 12px 16px;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .highlight-area {
+            fill: rgba(37, 99, 235, 0.1);
+            stroke: rgba(37, 99, 235, 0.3);
+            stroke-width: 1;
+            stroke-dasharray: 3,3;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 12px;
+            }
+            
+            .header {
+                padding: 20px 20px 15px 20px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .chart-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">The End of an Era? Chinese Student Enrollment in US Universities Shows Declining Trend in Recent Years</h1>
+            <p class="subtitle">Dramatic growth from 1980s through 2019 gives way to unexpected decline in recent years</p>
+        </header>
+        
+        <main class="main-content">
+            <div class="chart-container">
+                <div id="chart"></div>
+            </div>
+            
+            <div class="sources-note">
+                <p class="sources"><strong>Source:</strong> Open Doors; US Census Data - All Places of Origin Selected Years</p>
+                <p class="made-by">Made by Grace Jiang</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Parse data from CSV
+        const rawData = [
+            {year: "1964/65", students: 5},
+            {year: "1969/70", students: 19},
+            {year: "1974/75", students: 22},
+            {year: "1979/80", students: 1000},
+            {year: "1984/85", students: 10100},
+            {year: "1989/90", students: 33390},
+            {year: "1994/95", students: 39403},
+            {year: "1999/00", students: 54466},
+            {year: "2000/01", students: 59939},
+            {year: "2001/02", students: 63211},
+            {year: "2002/03", students: 64757},
+            {year: "2003/04", students: 61765},
+            {year: "2004/05", students: 62523},
+            {year: "2005/06", students: 62582},
+            {year: "2006/07", students: 67723},
+            {year: "2007/08", students: 81127},
+            {year: "2008/09", students: 98235},
+            {year: "2009/10", students: 127628},
+            {year: "2010/11", students: 157558},
+            {year: "2011/12", students: 194029},
+            {year: "2012/13", students: 235597},
+            {year: "2013/14", students: 274439},
+            {year: "2014/15", students: 304040},
+            {year: "2015/16", students: 328547},
+            {year: "2016/17", students: 350755},
+            {year: "2017/18", students: 363341},
+            {year: "2018/19", students: 369548},
+            {year: "2019/20", students: 372532},
+            {year: "2020/21", students: 317299},
+            {year: "2021/22", students: 290086},
+            {year: "2022/23", students: 289526},
+            {year: "2023/24", students: 277398}
+        ];
+
+        // Set dimensions and margins
+        const margin = {top: 15, right: 40, bottom: 60, left: 70};
+        const width = 900 - margin.left - margin.right;
+        const height = 380 - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Parse years for x-axis (convert academic years to numeric)
+        const data = rawData.map(d => ({
+            year: +d.year.split('/')[0] + 1, // Convert 1964/65 to 1965
+            students: d.students,
+            originalYear: d.year
+        }));
+
+        // Create scales
+        const xScale = d3.scaleLinear()
+            .domain(d3.extent(data, d => d.year))
+            .range([0, width]);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.students) * 1.1])
+            .range([height, 0]);
+
+        // Create line generator
+        const line = d3.line()
+            .x(d => xScale(d.year))
+            .y(d => yScale(d.students))
+            .curve(d3.curveMonotoneX);
+
+        // Add grid lines
+        const yGrid = d3.axisLeft(yScale)
+            .tickSize(-width)
+            .tickFormat("");
+
+        svg.append("g")
+            .attr("class", "grid")
+            .call(yGrid);
+
+        // Add axes
+        const xAxis = svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(xScale)
+                .tickFormat(d3.format("d"))
+                .ticks(10));
+
+        // Rotate x-axis labels
+        xAxis.selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-45)");
+
+        const yAxis = svg.append("g")
+            .attr("class", "axis")
+            .call(d3.axisLeft(yScale)
+                .tickFormat(d => {
+                    if (d >= 1000000) return (d/1000000).toFixed(1) + "M";
+                    if (d >= 1000) return (d/1000).toFixed(0) + "K";
+                    return d;
+                }));
+
+        // Add axis labels
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Number of Chinese Students");
+
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
+            .style("text-anchor", "middle")
+            .text("Academic Year");
+
+        // Create tooltip
+        const tooltip = d3.select("#tooltip");
+
+        // Highlight peak area (2015-2020)
+        const peakData = data.filter(d => d.year >= 2016 && d.year <= 2020);
+        if (peakData.length > 1) {
+            const area = d3.area()
+                .x(d => xScale(d.year))
+                .y0(height)
+                .y1(d => yScale(d.students))
+                .curve(d3.curveMonotoneX);
+
+            svg.append("path")
+                .datum(peakData)
+                .attr("class", "highlight-area")
+                .attr("d", area);
+        }
+
+        // Draw line
+        svg.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", line);
+
+        // Add dots
+        svg.selectAll(".dot")
+            .data(data)
+            .enter().append("circle")
+            .attr("class", "dot")
+            .attr("cx", d => xScale(d.year))
+            .attr("cy", d => yScale(d.students))
+            .on("mouseover", function(event, d) {
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .9);
+                
+                const formatNumber = d3.format(",");
+                tooltip.html(`
+                    <strong>${d.originalYear}</strong><br/>
+                    ${formatNumber(d.students)} students
+                `)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 40) + "px");
+            })
+            .on("mouseout", function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });
+
+        // Add annotations for key periods
+        const annotations = [
+            {year: 1980, text: "US-China\nEducational Exchange", students: 1000},
+            {year: 2009, text: "Post-Financial\nCrisis Growth", students: 127628},
+            {year: 2020, text: "Peak\nEnrollment", students: 372532},
+            {year: 2024, text: "Recent\nDecline", students: 277398}
+        ];
+
+        annotations.forEach(ann => {
+            const dataPoint = data.find(d => d.year === ann.year);
+            if (dataPoint) {
+                // Add annotation line
+                svg.append("line")
+                    .attr("x1", xScale(ann.year))
+                    .attr("y1", yScale(ann.students))
+                    .attr("x2", xScale(ann.year))
+                    .attr("y2", yScale(ann.students) - 30)
+                    .attr("stroke", "#6b7280")
+                    .attr("stroke-width", 1)
+                    .attr("stroke-dasharray", "2,2");
+
+                // Add annotation text
+                svg.append("text")
+                    .attr("x", xScale(ann.year))
+                    .attr("y", yScale(ann.students) - 35)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "10px")
+                    .style("fill", "#4b5563")
+                    .style("font-weight", "500")
+                    .selectAll("tspan")
+                    .data(ann.text.split('\n'))
+                    .enter()
+                    .append("tspan")
+                    .attr("x", xScale(ann.year))
+                    .attr("dy", (d, i) => i === 0 ? 0 : 10)
+                    .text(d => d);
+            }
+        });
+
+        // Responsive functionality
+        function resize() {
+            const container = d3.select("#chart").node();
+            const containerWidth = container.getBoundingClientRect().width;
+            
+            if (containerWidth < 600) {
+                svg.attr("width", containerWidth - 40)
+                    .attr("height", 320);
+            }
+        }
+
+        // Initial resize
+        resize();
+        
+        // Listen for window resize
+        window.addEventListener('resize', resize);
+    </script>
+</body>
+</html>
